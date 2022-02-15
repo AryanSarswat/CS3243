@@ -1,7 +1,0 @@
-utils.c:3:5: error: conflicting types for ‘sum’
-    3 | int sum(int sum_array[], int n) {
-      |     ^~~
-In file included from utils.c:1:
-utils.h:2:8: note: previous declaration of ‘sum’ was here
-    2 | double sum(int [], int);
-      |        ^~~

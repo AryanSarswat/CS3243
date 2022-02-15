@@ -1,2 +1,0 @@
-
-double sum(int [], int);
