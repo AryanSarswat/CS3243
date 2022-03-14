@@ -31,35 +31,35 @@ class Piece:
             pos_moves = [(current_position[0] + 1, current_position[1]), (current_position[0] - 1, current_position[1]), (current_position[0], current_position[1] + 1), (current_position[0], current_position[1] - 1),
                          (current_position[0] + 1, current_position[1] + 1), (current_position[0] - 1, current_position[1] - 1), (current_position[0] + 1, current_position[1] - 1), (current_position[0] - 1, current_position[1] + 1)]
             for move in pos_moves:
-                if 0 <= move[0] < board.rows and 0 <= move[1] < board.columns and board.isEmpty(move):
+                if 0 <= move[0] < board.rows and 0 <= move[1] < board.columns and board.isAttackable(move):
                     possible_actions.append(move)
             
         elif piece_name == "Queen":
             #Left actions
             for x in range(current_position[1] - 1, -1, -1):
                 pos = (current_position[0], x)
-                if board.isEmpty(pos):
+                if board.isAttackable(pos):
                     possible_actions.append(pos)
                 else:
                     break
             #Right actions
             for x in range(current_position[1] + 1, board.columns):
                 pos = (current_position[0], x)
-                if board.isEmpty(pos):
+                if board.isAttackable(pos):
                     possible_actions.append(pos)
                 else:
                     break
             #Up actions
             for y in range(current_position[0] - 1, -1, -1):
                 pos = (y, current_position[1])
-                if board.isEmpty(pos):
+                if board.isAttackable(pos):
                     possible_actions.append((y, current_position[1]))
                 else:
                     break
             #Down actions
             for y in range(current_position[0] + 1, board.rows):
                 pos = (y, current_position[1])
-                if board.isEmpty(pos):
+                if board.isAttackable(pos):
                     possible_actions.append((y, current_position[1]))
                 else:
                     break
@@ -68,28 +68,28 @@ class Piece:
             #Down_Right actions
             for i in range(1, max_iter):
                 pos = (current_position[0] + i, current_position[1] + i)
-                if pos[0] < board.rows and pos[1] < board.columns and board.isEmpty(pos):
+                if pos[0] < board.rows and pos[1] < board.columns and board.isAttackable(pos):
                     possible_actions.append(pos)
                 else:
                     break
             #Up_left actions
             for i in range(1, max_iter):
                 pos = (current_position[0] - i, current_position[1] - i)
-                if pos[0] >= 0 and pos[1] >= 0 and board.isEmpty(pos):
+                if pos[0] >= 0 and pos[1] >= 0 and board.isAttackable(pos):
                     possible_actions.append(pos)
                 else:
                     break
             #Up_right actions
             for i in range(1, max_iter):
                 pos = (current_position[0] - i, current_position[1] + i)
-                if pos[0] >= 0 and pos[1] < board.columns and board.isEmpty(pos):
+                if pos[0] >= 0 and pos[1] < board.columns and board.isAttackable(pos):
                     possible_actions.append(pos)
                 else:
                     break
             #Down_left actions
             for i in range(1, max_iter):
                 pos = (current_position[0] + i, current_position[1] - i)
-                if pos[0] < board.rows and pos[1] >= 0 and board.isEmpty(pos):
+                if pos[0] < board.rows and pos[1] >= 0 and board.isAttackable(pos):
                     possible_actions.append(pos)
                 else:
                     break      
@@ -97,28 +97,28 @@ class Piece:
             #Left actions
             for x in range(current_position[1] - 1, -1, -1):
                 pos = (current_position[0], x)
-                if board.isEmpty(pos):
+                if board.isAttackable(pos):
                     possible_actions.append((current_position[0], x))
                 else:
                     break
             #Right actions
             for x in range(current_position[1] + 1, board.columns):
                 pos = (current_position[0], x)
-                if board.isEmpty(pos):
+                if board.isAttackable(pos):
                     possible_actions.append((current_position[0], x))
                 else:
                     break
             #Up actions
             for y in range(current_position[0] - 1, -1, -1):
                 pos = (y, current_position[1])
-                if board.isEmpty(pos):
+                if board.isAttackable(pos):
                     possible_actions.append((y, current_position[1]))
                 else:
                     break
             #Down actions
             for y in range(current_position[0] + 1, board.rows):
                 pos = (y, current_position[1])
-                if board.isEmpty(pos):
+                if board.isAttackable(pos):
                     possible_actions.append((y, current_position[1]))
                 else:
                     break
@@ -127,28 +127,28 @@ class Piece:
             #Down_Right actions
             for i in range(1, max_iter):
                 pos = (current_position[0] + i, current_position[1] + i)
-                if pos[0] < board.rows and pos[1] < board.columns and board.isEmpty(pos):
+                if pos[0] < board.rows and pos[1] < board.columns and board.isAttackable(pos):
                     possible_actions.append(pos)
                 else:
                     break
             #Up_left actions
             for i in range(1, max_iter):
                 pos = (current_position[0] - i, current_position[1] - i)
-                if pos[0] >= 0 and pos[1] >= 0 and board.isEmpty(pos):
+                if pos[0] >= 0 and pos[1] >= 0 and board.isAttackable(pos):
                     possible_actions.append(pos)
                 else:
                     break
             #Up_right actions
             for i in range(1, max_iter):
                 pos = (current_position[0] - i, current_position[1] + i)
-                if pos[0] >= 0 and pos[1] < board.columns and board.isEmpty(pos):
+                if pos[0] >= 0 and pos[1] < board.columns and board.isAttackable(pos):
                     possible_actions.append(pos)
                 else:
                     break
             #Down_left actions
             for i in range(1, max_iter):
                 pos = (current_position[0] + i, current_position[1] - i)
-                if pos[0] < board.rows and pos[1] >= 0 and board.isEmpty(pos):
+                if pos[0] < board.rows and pos[1] >= 0 and board.isAttackable(pos):
                     possible_actions.append(pos)
                 else:
                     break                
@@ -156,7 +156,7 @@ class Piece:
             pos_moves = [(current_position[0] - 2, current_position[1] + 1), (current_position[0] - 2, current_position[1] - 1), (current_position[0] + 2, current_position[1] + 1), (current_position[0] + 2, current_position[1] - 1),
                          (current_position[0] - 1, current_position[1] + 2), (current_position[0] - 1, current_position[1] - 2), (current_position[0] + 1, current_position[1] + 2), (current_position[0] + 1, current_position[1] - 2)]
             for move in pos_moves:
-                if 0 <= move[0] < board.rows and 0 <= move[1] < board.columns and board.isEmpty(move):
+                if 0 <= move[0] < board.rows and 0 <= move[1] < board.columns and board.isAttackable(move):
                     possible_actions.append(move)
         else:
             raise Exception("Invalid piece name")
@@ -381,7 +381,7 @@ class Board:
     def isGoal(self, coord):
         return coord in self.goal_positions
     
-    def isEmpty(self, coord):
+    def isAttackable(self, coord):
         if self.grid[coord[0]][coord[1]] == '0' or type(self.grid[coord[0]][coord[1]]) == AttackedPosition or type(self.grid[coord[0]][coord[1]]) == Goal:
             return True
         return False
@@ -519,5 +519,8 @@ def run_BFS():
         moves.append([temp_moves[i], temp_moves[i+1]])
     
     return moves, numNodesExplored #Format to be returned
+
+if __name__ == '__main__':
+    print(run_BFS())
 
 
