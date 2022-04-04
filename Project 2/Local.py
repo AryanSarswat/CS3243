@@ -391,6 +391,11 @@ def run_local():
     goalState = search(rows, columns, obstacle_locations, pieces, K)
     return goalState #Format to be returned
 
-# if __name__ == '__main__':
-#     print(run_local())
-    
+from time import time
+
+if __name__ == '__main__':
+    start = time()
+    run_local()
+    end = time()
+    print("Time taken: ", end - start)
+        

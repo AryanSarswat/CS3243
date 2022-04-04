@@ -630,10 +630,10 @@ def run_CSP():
     goalState = search(rows, columns, obstacle_locations, numKings, numQueens, numBishops, numRook, numKnights)
     return goalState #Format to be returned
 
-# from time import time
+from time import time
 
-# if __name__ == '__main__':
-#     start = time()
-#     run_CSP()
-#     end = time()
-#     print("Time taken: ", end - start)
+if __name__ == '__main__':
+    start = time()
+    run_CSP()
+    end = time()
+    print("Time taken: ", end - start)
