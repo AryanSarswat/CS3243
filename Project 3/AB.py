@@ -1,15 +1,23 @@
-import nntplib
 import sys
 from copy import deepcopy
-from random import choice
+from random import choice, shuffle
 import math
-import time
+
 
 
 ### IMPORTANT: Remove any print() functions or rename any print functions/variables/string when submitting on CodePost
 ### The autograder will not run if it detects any print function.
 
 # Helper functions to aid in your implementation. Can edit/remove
+
+PIECE_VALUES = {
+    "King" : 25,
+    "Queen" : 9,
+    "Rook" : 5,
+    "Bishop" : 3,
+    "Knight" : 3,
+    "Pawn" : 1
+}
 
 def convert_to_index(string):
     col = string[0]
@@ -26,7 +34,6 @@ class Piece:
         self.current_position = current_position
         self.color = opponent
         self.symbol = ""
-        self.attack = dict()
         
     def updatePosition(self, position):
         self.current_position = position
@@ -299,24 +306,29 @@ class Board:
         self.turn = 1
         self.white_king = None
         self.black_king = None
-        self.white_pieces = white_pieces
-        self.black_pieces = black_pieces
+        self.white_pieces = dict()
+        self.black_pieces = dict()
         self.num_moves_made = 0
-        
-        self.grid = [[0 for _ in range(columns)] for _ in range(rows)]
+        self.value = 0
         
         for piece in white_pieces:
-            self.grid[piece.current_position[0]][piece.current_position[1]] = piece
+            pos = piece.current_position
+            self.value += PIECE_VALUES[piece.name]
+            self.white_pieces[pos] = piece
             if type(piece) == King:
                 self.white_king = piece
         
         for piece in black_pieces:
-            self.grid[piece.current_position[0]][piece.current_position[1]] = piece
+            pos = piece.current_position
+            self.value += PIECE_VALUES[piece.name]
+            self.black_pieces[pos] = piece
             if type(piece) == King:
                 self.black_king = piece
             
     def isEmpty(self, coord):
-        if self.grid[coord[0]][coord[1]] == 0:
+        if not self.isValidPos(coord):
+            return False
+        if coord not in self.black_pieces and coord not in self.white_pieces:
             return True
         return False
     
@@ -327,7 +339,7 @@ class Board:
     
     def isPiece(self, coord):
         if 0 <= coord[0] < self.rows and 0 <= coord[1] < self.columns:
-            if type(self.grid[coord[0]][coord[1]]) in [King, Queen, Rook, Bishop, Knight, Pawn]:
+            if coord in self.black_pieces or coord in self.white_pieces:
                 return True
         return False
     
@@ -335,51 +347,65 @@ class Board:
         if not self.isValidPos(coord):
             return False
         if self.turn == 1:
-            if self.isPiece(coord) and self.grid[coord[0]][coord[1]] in self.black_pieces:
+            if self.isPiece(coord) and coord in self.black_pieces:
                 return True
         elif self.turn == -1:
-            if self.isPiece(coord) and self.grid[coord[0]][coord[1]] in self.white_pieces:
+            if self.isPiece(coord) and coord in self.white_pieces:
                 return True
         return False
     
     def possibleMoves(self):
         pos_moves = []
         if self.turn == 1:
-            for piece in self.white_pieces:
+            for piece in self.white_pieces.values():
                 pieceMoves = piece.possibleMoves(self)
                 if len(pieceMoves) != 0:
-                    pos_moves.append([piece, piece.possibleMoves(self)])
+                    for move in pieceMoves:
+                        pos_moves.append([piece.current_position, move])
         else:
-            for piece in self.black_pieces:
+            for piece in self.black_pieces.values():
                 pieceMoves = piece.possibleMoves(self)
                 if len(pieceMoves) != 0:
-                    pos_moves.append([piece, piece.possibleMoves(self)])
-                
+                    for move in pieceMoves:
+                        pos_moves.append([piece.current_position, move])
         return pos_moves
     
-    def makeMove(self, piece, move):
+    def makeMove(self, prev_pos, new_pos):
         newBoard = deepcopy(self)
-        pieceToMove = newBoard.grid[piece.current_position[0]][piece.current_position[1]]
-        newBoard.grid[piece.current_position[0]][piece.current_position[1]] = 0
-        pieceToMove.updatePosition(move)
+        pieceToMove = None
+        if self.turn == 1:
+            pieceToMove = newBoard.white_pieces[prev_pos]
+            newBoard.white_pieces[new_pos] = pieceToMove
+            del newBoard.white_pieces[prev_pos]
+            
+        else:
+            pieceToMove = newBoard.black_pieces[prev_pos]
+            newBoard.black_pieces[new_pos] = pieceToMove
+            del newBoard.black_pieces[prev_pos]
+            
+        
+        pieceToMove.updatePosition(new_pos)
         
         
-        if newBoard.grid[move[0]][move[1]] != 0:
-            if newBoard.grid[move[0]][move[1]].color == -1:
-                newBoard.black_pieces.remove(newBoard.grid[move[0]][move[1]])
-                newBoard.num_moves_made = 0
-            else:
-                newBoard.white_pieces.remove(newBoard.grid[move[0]][move[1]])
-                newBoard.num_moves_made = 0
-                
-                
-        newBoard.grid[move[0]][move[1]] = pieceToMove
+        if self.turn == 1 and new_pos in newBoard.black_pieces:
+            pieceToRemove = newBoard.black_pieces[new_pos]
+            newBoard.value += PIECE_VALUES[pieceToMove.name]
+            del newBoard.black_pieces[new_pos]
+            if pieceToRemove.name == "King":
+                newBoard.black_king = None
+        elif self.turn == -1 and new_pos in newBoard.white_pieces:
+            pieceToRemove = newBoard.black_pieces[new_pos]
+            newBoard.value -= PIECE_VALUES[pieceToMove.name]
+            del newBoard.white_pieces[new_pos]
+            if pieceToRemove.name == "King":
+                newBoard.white_king = None
+
         newBoard.turn *= -1
         newBoard.num_moves_made += 1
         return newBoard
     
     def isTerminal(self):
-        if self.white_king not in self.white_pieces or self.black_king not in self.black_pieces:
+        if self.white_king == None or self.black_king == None:
             return True
         
         if self.num_moves_made >= 50:
@@ -391,7 +417,18 @@ class Board:
         return False
     
     def __repr__(self):
-        grid = '\n'.join(['\t'.join(['|' + str(cell) + '|' for cell in row]) for row in self.grid])
+        printGrid = [[0 for _ in range(self.columns)] for _ in range(self.rows)]
+        for coord, piece in self.white_pieces.items():
+            printGrid[coord[0]][coord[1]] = piece
+        for coord, piece in self.black_pieces.items():
+            printGrid[coord[0]][coord[1]] = piece
+            
+        for row in range(self.rows):
+            printGrid[row] = [row] + printGrid[row]
+            
+        printGrid.append(['', 0, 1, 2, 3, 4])
+            
+        grid = '\n'.join(['\t'.join(['|' + str(cell) + '|' for cell in row]) for row in printGrid])
         
         grid += "\n \n"
         
@@ -451,65 +488,36 @@ def parse_input(file_path):
             
     return rows, columns, black_pieces, white_pieces
 
-def instantiate_board():
-    config = sys.argv[1]
-    rows, columns, black_pieces, white_pieces = parse_input(config)
-    board = Board(rows, columns, white_pieces, black_pieces)
-    
-    print(board)
-    
-    while not board.isTerminal():
-        if board.turn == 1:
-            start = time.time()
-            value , move = ab(board)
-            end = time.time()
-            print(f"Minimax move (Time taken {end - start}")
-        else:
-            print("Opponent Move")
-            move = manual_agent(board)
-        
-        board = board.makeMove(move[0], move[1])
-        print(move)
-        print(board)
-
 def random_agent(board):
     p_moves = board.possibleMoves()
-    piece , moves = choice(p_moves)
-    move = (piece, choice(moves))
+    prev_pos, new_pos = choice(p_moves)
+    move = (prev_pos, new_pos)
     return move
 
 def manual_agent(board):
-    p_moves = board.possibleMoves()
-    print(p_moves)
     i, j = input("Enter piece and move: ").split()
-    return (p_moves[int(i)][0], p_moves[int(i)][1][int(j)])
+    prev = i.split(",")
+    next = j.split(",")
+    return ((int(prev[0]), int(prev[1])), (int(next[0]), int(next[1])))
         
 def heuristic(board):
-    PIECE_VALUES = {
-        "King" : 100,
-        "Queen" : 9,
-        "Rook" : 5,
-        "Bishop" : 3,
-        "Knight" : 3,
-        "Pawn" : 1
-    }
     
-    score = sum([PIECE_VALUES[piece.name] for piece in board.white_pieces]) - sum([PIECE_VALUES[piece.name] for piece in board.black_pieces])
+    max_value = sum([PIECE_VALUES[piece.name] for piece in board.white_pieces.values()])
+    min_value = sum([PIECE_VALUES[piece.name] for piece in board.black_pieces.values()])
     
-    return score
+    return max_value - min_value
         
 
 
 #Implement your minimax with alpha-beta pruning algorithm here.
 def ab(board):
-    DEPTH = 4
+    DEPTH = 2
     if board.turn == 1:
         value, move = max_value(DEPTH, board, -math.inf, math.inf)
     else:
         value , move = min_value(DEPTH, board, -math.inf, math.inf)
     return value, move
     
-
 def max_value(depth, board, alpha, beta):
     if board.isTerminal() or depth == 0:
         return heuristic(board), None
@@ -517,14 +525,14 @@ def max_value(depth, board, alpha, beta):
     v = -math.inf
     best_move = None
     pos_moves = board.possibleMoves()
-    for piece_move in pos_moves:
-        for move in piece_move[1]:
-            v2, a2 = min_value(depth - 1, board.makeMove(piece_move[0], move), alpha, beta)
-            if v2 > v:
-                v , best_move = v2, [piece_move[0], move]
-                alpha = max(alpha, v)
-            if v >= beta:
-                return v, best_move
+    shuffle(pos_moves)
+    for moves in pos_moves:
+        v2, a2 = min_value(depth - 1, board.makeMove(moves[0], moves[1]), alpha, beta)
+        if v2 > v:
+            v , best_move = v2, (moves[0], moves[1])
+            alpha = max(alpha, v)
+        if v >= beta:
+            return v, best_move
     return v, best_move
 
 def min_value(depth, board, alpha ,beta):
@@ -534,14 +542,14 @@ def min_value(depth, board, alpha ,beta):
     v = math.inf
     best_move = None
     pos_moves = board.possibleMoves()
-    for piece_move in pos_moves:
-        for move in piece_move[1]:
-            v2, a2 = max_value(depth - 1, board.makeMove(piece_move[0], move), alpha, beta)
-            if v2 < v:
-                v , best_move = v2, [piece_move[0], move]
-                beta = min(beta, v)
-            if v <= alpha:
-                return v, best_move
+    shuffle(pos_moves)
+    for moves in pos_moves:
+        v2, a2 = max_value(depth - 1, board.makeMove(moves[0], moves[1]), alpha, beta)
+        if v2 < v:
+            v , best_move = v2, (moves[0], moves[1])
+            beta = min(beta, v)
+        if v <= alpha:
+            return v, best_move
     return v, best_move
 
 
@@ -563,7 +571,7 @@ def min_value(depth, board, alpha ,beta):
 
 def studentAgent(gameboard):
     # You can code in here but you cannot remove this function, change its parameter or change the return type
-    config = sys.argv[1] #Takes in config.txt Optional
+    #config = sys.argv[1] #Takes in config.txt Optional
 
     rows = 5
     columns = 5
@@ -573,40 +581,90 @@ def studentAgent(gameboard):
     for pos, piece in gameboard.items():
         if piece[0] == "King":
             if piece[1] == "White":
-                whitepieces.append(King(pos))
+                temp = pos[0] + str(pos[1])
+                whitepieces.append(King(convert_to_index(temp)))
             else:
-                blackpieces.append(King(pos))
+                temp = pos[0] + str(pos[1])
+                blackpieces.append(King(convert_to_index(temp), opponent = -1))
         elif piece[0] == "Queen":
             if piece[1] == "White":
-                whitepieces.append(Queen(pos))
+                temp = pos[0] + str(pos[1])
+                whitepieces.append(Queen(convert_to_index(temp)))
             else:
-                blackpieces.append(Queen(pos))
+                temp = pos[0] + str(pos[1])
+                blackpieces.append(Queen(convert_to_index(temp), opponent= -1))
         elif piece[0] == "Bishop":
             if piece[1] == "White":
-                whitepieces.append(Bishop(pos))
+                temp = pos[0] + str(pos[1])
+                whitepieces.append(Bishop(convert_to_index(temp)))
             else:
-                blackpieces.append(Bishop(pos))
+                temp = pos[0] + str(pos[1])
+                blackpieces.append(Bishop(convert_to_index(temp), opponent= -1))
         elif piece[0] == "Rook":
             if piece[1] == "White":
-                whitepieces.append(Rook(pos))
+                temp = pos[0] + str(pos[1])
+                whitepieces.append(Rook(convert_to_index(temp)))
             else:
-                blackpieces.append(Rook(pos))
+                temp = pos[0] + str(pos[1])
+                blackpieces.append(Rook(convert_to_index(temp), opponent= -1))
         elif piece[0] == "Knight":
             if piece[1] == "White":
-                whitepieces.append(Knight(pos))
+                temp = pos[0] + str(pos[1])
+                whitepieces.append(Knight(convert_to_index(temp)))
             else:
-                blackpieces.append(Knight(pos))
+                temp = pos[0] + str(pos[1])
+                blackpieces.append(Knight(convert_to_index(temp), opponent= -1))
         elif piece[0] == "Pawn":
             if piece[1] == "White":
-                whitepieces.append(Pawn(pos))
+                temp = pos[0] + str(pos[1])
+                whitepieces.append(Pawn(convert_to_index(temp)))
             else:
-                blackpieces.append(Pawn(pos))
+                temp = pos[0] + str(pos[1])
+                blackpieces.append(Pawn(convert_to_index(temp), opponent= -1))
         
     board = Board(rows, columns, whitepieces, blackpieces)
     
-    move = ab(board)
+    value, move = ab(board)
+    
+    move = [convert_to_notation(move[0]), convert_to_notation(move[1])]
+    
     return move #Format to be returned (('a', 0), ('b', 3))
 
+# import time
+# def instantiate_board():
+#     config = sys.argv[1]
+#     rows, columns, black_pieces, white_pieces = parse_input(config)
+#     board = Board(rows, columns, white_pieces, black_pieces)
+    
+#     print(board)
+    
+#     while not board.isTerminal():
+#         if board.turn == 1:
+#             start = time.time()
+#             value , move = ab(board)
+#             end = time.time()
+#             print(f"Minimax move (Time taken {end - start}")
+#         else:
 
-if __name__ == '__main__':
-    instantiate_board()
+#             print("Opponent Move")
+#             move = manual_agent(board)
+        
+#         board = board.makeMove(move[0], move[1])
+#         print(move)
+#         print(board)
+
+# if __name__ == '__main__':
+#     instantiate_board()
+
+
+# if __name__ == '__main__':
+#     gameboard = {
+#         ('a', 0) : ('Queen','White'
+# ), 
+#         ('a', 1) : ('King','White'),
+#         ('b', 4) : ('Rook','White'),
+#         ('d', 2) : ('Knight','Black'), 
+#         ('c', 3) : ("King", "Black"),
+#         ('c', 2) : ("Pawn", "Black")
+#     }
+#     print(studentAgent(gameboard))
